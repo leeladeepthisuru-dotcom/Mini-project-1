@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyberpunk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum State Calculator</title>
+    <style>
+        /* ==========================================================================
+           THEME DEFINITIONS (Using CSS Variables / Custom Properties)
+           ========================================================================== */
+        
+        /* 1. Cyberpunk Theme (Default) */
+        [data-theme="cyberpunk"] {
+            --bg-gradient: linear-gradient(135deg, #0f0c1b, #201335);
+            --calc-bg: rgba(26, 15, 46, 0.7);
+            --calc-border: #ff007f;
+            --calc-shadow: 0 20px 50px rgba(255, 0, 127, 0.3);
+            --display-bg: #0d0614;
+            --text-primary: #00f0ff;
+            --text-secondary: #ff007f;
+            --btn-bg: rgba(32, 19, 53, 0.8);
+            --btn-hover: #ff007f;
+            --btn-text: #00f0ff;
+            --btn-text-hover: #000;
+            --accent-bg: #00f0ff;
+            --accent-text: #000;
+            --glow: 0 0 12px #ff007f;
+        }
+
+        /* 2. Glass Aurora Theme */
+        [data-theme="aurora"] {
+            --bg-gradient: linear-gradient(135deg, #051923, #006494);
+            --calc-bg: rgba(255, 255, 255, 0.05);
+            --calc-border: rgba(255, 255, 255, 0.15);
+            --calc-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            --display-bg: rgba(0, 0, 0, 0.4);
+            --text-primary: #e0fbfc;
+            --text-secondary: #98c1d9;
+            --btn-bg: rgba(255, 255, 255, 0.03);
+            --btn-hover: rgba(152, 193, 217, 0.3);
+            --btn-text: #e0fbfc;
+            --btn-text-hover: #fff;
+            --accent-bg: #3d5a80;
+            --accent-text: #fff;
+            --glow: 0 0 15px rgba(224, 251, 252, 0.4);
+        }
+
+        /* 3. Monolithic Minimalist */
+        [data-theme="mono"] {
+            --bg-gradient: linear-gradient(135deg, #121212, #1a1a1a);
+            --calc-bg: #1e1e1e;
+            --calc-border: #333333;
+            --calc-shadow: 0 25px 60px rgba(0,0,0,0.8);
+            --display-bg: #151515;
+            --text-primary: #ffffff;
+            --text-secondary: #666666;
+            --btn-bg: #222222;
+            --btn-hover: #ffffff;
+            --btn-text: #ffffff;
+            --btn-text-hover: #000000;
+            --accent-bg: #ffffff;
+            --accent-text: #000000;
+            --glow: none;
+        }
+
+        /* ==========================================================================
+           BASE STYLES & LAYOUT
+           ========================================================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            transition: background 0.4s ease, color 0.4s ease, border 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Unique Floating Architecture Container */
+        .calculator-container {
+            position: relative;
+            background: var(--calc-bg);
+            border: 1px solid var(--calc-border);
+            border-radius: 24px;
+            padding: 30px;
+            width: 380px;
+            box-shadow: var(--calc-shadow);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        /* Top Bar & Theme Selector */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .brand-title {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            text-shadow: var(--glow);
+        }
+
+        .theme-select-wrapper {
+            position: relative;
+        }
+
+        .theme-select {
+            background: var(--display-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--calc-border);
+            padding: 6px 12px;
+            border-radius: 8px;
+            outline: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            appearance: none;
+            padding-right: 30px;
+        }
+
+        .theme-select-wrapper::after {
+            content: '▼';
+            font-size: 0.6rem;
+            color: var(--text-primary);
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        /* UI Dynamic Display Screens */
+        .display-system {
+            background: var(--display-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.02);
+            text-align: right;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .display-system::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 100%;
+            background: linear-gradient(rgba(255,255,255,0.03) 50%, rgba(0,0,0,0.1) 50%);
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .expression-screen {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            min-height: 20px;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .output-screen {
+            color: var(--text-primary);
+            font-size: 2.5rem;
+            font-weight: 300;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-shadow: var(--glow);
+        }
+
+        /* Interactive Grid Pad */
+        .keypad-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .btn {
+            background: var(--btn-bg);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: 14px;
+            color: var(--btn-text);
+            font-size: 1.2rem;
+            padding: 20px 0;
+            cursor: pointer;
+            outline: none;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%; width: 0; height: 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .btn:active::after {
+            width: 200%;
+            height: 200%;
+        }
+
+        .btn:hover {
+            background: var(--btn-hover);
+            color: var(--btn-text-hover);
+            box-shadow: var(--glow);
+            border-color: transparent;
+        }
+
+        /* Specialized structural classes */
+        .btn.operator {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .btn.span-2 {
+            grid-column: span 2;
+        }
+
+        .btn.action-eval {
+            background: var(--accent-bg);
+            color: var(--accent-text);
+            font-weight: 700;
+        }
+        
+        .btn.action-eval:hover {
+            background: var(--accent-bg);
+            color: var(--accent-text);
+            opacity: 0.9;
+            box-shadow: 0 0 20px var(--accent-bg);
+        }
+
+        /* State Indicator Dot */
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--text-primary);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            box-shadow: var(--glow);
+            animation: pulse 2s infinite linear;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator-container">
+        <div class="top-bar">
+            <div class="brand-title">
+                <span class="status-dot"></span>State.OS v2.1
+            </div>
+            <div class="theme-select-wrapper">
+                <select class="theme-select" id="themeEngine">
+                    <option value="cyberpunk">Cyberpunk Glow</option>
+                    <option value="aurora">Glass Aurora</option>
+                    <option value="mono">Monochrome</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="display-system">
+            <div class="expression-screen" id="expressionView"></div>
+            <div class="output-screen" id="outputView">0</div>
+        </div>
+
+        <div class="keypad-grid" id="keypad">
+            <button class="btn operator" data-cmd="clear">AC</button>
+            <button class="btn operator" data-cmd="delete">DEL</button>
+            <button class="btn operator" data-val="%">%</button>
+            <button class="btn operator" data-val="/">÷</button>
+
+            <button class="btn" data-val="7">7</button>
+            <button class="btn" data-val="8">8</button>
+            <button class="btn" data-val="9">9</button>
+            <button class="btn operator" data-val="*">×</button>
+
+            <button class="btn" data-val="4">4</button>
+            <button class="btn" data-val="5">5</button>
+            <button class="btn" data-val="6">6</button>
+            <button class="btn operator" data-val="-">-</button>
+
+            <button class="btn" data-val="1">1</button>
+            <button class="btn" data-val="2">2</button>
+            <button class="btn" data-val="3">3</button>
+            <button class="btn operator" data-val="+">+</button>
+
+            <button class="btn span-2" data-val="0">0</button>
+            <button class="btn" data-val=".">.</button>
+            <button class="btn action-eval" data-cmd="evaluate">=</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * State Architecture Object Store definitions
+         */
+        const CalculatorStore = {
+            // Internal Private State Array
+            _state: {
+                currentValue: '0',
+                expression: '',
+                isOverwritten: false
+            },
+
+            // Subscriber Listeners Matrix Array
+            _listeners: [],
+
+            // Fetch Current Mutation State Immutably
+            getState() {
+                return { ...this._state };
+            },
+
+            // Register Reactive Layout UI Render Triggers
+            subscribe(listener) {
+                this._listeners.push(listener);
+            },
+
+            // Mutation Execution Handling Hub (Redux-Style Dispatch Dispatcher Core)
+            dispatch(action) {
+                switch (action.type) {
+                    case 'APPEND_DIGIT':
+                        this._state = this._appendDigit(this._state, action.payload);
+                        break;
+                    case 'APPEND_OPERATOR':
+                        this._state = this._appendOperator(this._state, action.payload);
+                        break;
+                    case 'CLEAR':
+                        this._state = { currentValue: '0', expression: '', isOverwritten: false };
+                        break;
+                    case 'DELETE':
+                        this._state = this._delete(this._state);
+                        break;
+                    case 'EVALUATE':
+                        this._state = this._evaluate(this._state);
+                        break;
+                }
+                // Notify UI state observers on mutation finished loop
+                this._listeners.forEach(listener => listener(this.getState()));
+            },
+
+            /* Pure Function Mutators Mapping */
+            _appendDigit(state, digit) {
+                if (state.isOverwritten) {
+                    return { ...state, currentValue: digit === '.' ? '0.' : digit, isOverwritten: false };
+                }
+                if (digit === '.' && state.currentValue.includes('.')) return state;
+                if (state.currentValue === '0' && digit !== '.') {
+                    return { ...state, currentValue: digit };
+                }
+                return { ...state, currentValue: state.currentValue + digit };
+            },
+
+            _appendOperator(state, operator) {
+                let expr = state.expression;
+                if (state.isOverwritten) {
+                    expr = '';
+                }
+                
+                // Chain values based on output calculation states
+                if (expr === '' || state.isOverwritten) {
+                    expr = `${state.currentValue} ${operator} `;
+                } else if (/[+\-*/%]\s*$/.test(expr) && state.currentValue === '0') {
+                    // Overwrite trailing arithmetic operators seamlessly
+                    expr = expr.replace(/[+\-*/%]\s*$/, `${operator} `);
+                } else {
+                    expr += `${state.currentValue} ${operator} `;
+                }
+
+                return {
+                    ...state,
+                    expression: expr,
+                    currentValue: '0',
+                    isOverwritten: false
+                };
+            },
+
+            _delete(state) {
+                if (state.isOverwritten) return { ...state, expression: '' };
+                if (state.currentValue.length <= 1) return { ...state, currentValue: '0' };
+                return { ...state, currentValue: state.currentValue.slice(0, -1) };
+            },
+
+            _evaluate(state) {
+                if (!state.expression && !state.isOverwritten) return state;
+                
+                const finalExpression = state.expression + state.currentValue;
+                try {
+                    // Safe parsing evaluation structure natively
+                    // Sanitizing characters to process expressions correctly
+                    const cleanExpr = finalExpression.replace(/×/g, '*').replace(/÷/g, '/');
+                    
+                    // Native Function Execution Context Sandbox Engine
+                    const computeResult = new Function(`return (${cleanExpr})`);
+                    let result = computeResult();
+
+                    if (!isFinite(result)) throw new Error("Infinity Error");
+
+                    // Sanitize floating point decimal errors gracefully (e.g. 0.1 + 0.2)
+                    result = Math.round(result * 1e12) / 1e12;
+
+                    return {
+                        expression: finalExpression + ' =',
+                        currentValue: String(result),
+                        isOverwritten: true
+                    };
+                } catch (err) {
+                    return {
+                        expression: 'Error Processing Matrix',
+                        currentValue: 'ERR',
+                        isOverwritten: true
+                    };
+                }
+            }
+        };
+
+        /* ==========================================================================
+           DOM UI BINDING INTERFACES & EVENT HOOKS LAYER
+           ========================================================================== */
+        const expressionView = document.getElementById('expressionView');
+        const outputView = document.getElementById('outputView');
+        const keypad = document.getElementById('keypad');
+        const themeEngine = document.getElementById('themeEngine');
+
+        // Render Method reacting instantly to State changes
+        CalculatorStore.subscribe((state) => {
+            expressionView.textContent = state.expression;
+            // Add UI enhancements like formatting numbers comma separations
+            if(state.currentValue === 'ERR') {
+                outputView.textContent = state.currentValue;
+            } else {
+                const parts = state.currentValue.split('.');
+                parts[0] = Number(parts[0]).toLocaleString('en-US');
+                outputView.textContent = parts.join('.');
+            }
+        });
+
+        // Click Controller Router Dispatch Interceptor
+        keypad.addEventListener('click', (e) => {
+            const button = e.target.closest('.btn');
+            if (!button) return;
+
+            const value = button.dataset.val;
+            const command = button.dataset.cmd;
+
+            if (value) {
+                if (['+', '-', '*', '/', '%'].includes(value)) {
+                    CalculatorStore.dispatch({ type: 'APPEND_OPERATOR', payload: value });
+                } else {
+                    CalculatorStore.dispatch({ type: 'APPEND_DIGIT', payload: value });
+                }
+            } else if (command) {
+                CalculatorStore.dispatch({ type: command.toUpperCase() });
+            }
+        });
+
+        // Theme Switcher Interceptor leveraging HTML5 custom element datasets and variables
+        themeEngine.addEventListener('change', (e) => {
+            document.documentElement.setAttribute('data-theme', e.target.value);
+        });
+
+        // Physical Keyboard Binding Mapping Layer
+        document.addEventListener('keydown', (e) => {
+            let key = e.key;
+            if (key === 'Enter') key = '=';
+            if (key === 'Escape') {
+                CalculatorStore.dispatch({ type: 'CLEAR' });
+                return;
+            }
+            if (key === 'Backspace') {
+                CalculatorStore.dispatch({ type: 'DELETE' });
+                return;
+            }
+
+            const activeBtn = keypad.querySelector(`[data-val="${key}"], [data-cmd="evaluate"]`);
+            if (key === '=' && activeBtn) {
+                CalculatorStore.dispatch({ type: 'EVALUATE' });
+                return;
+            }
+
+            if (['0','1','2','3','4','5','6','7','8','9','.'].includes(key)) {
+                CalculatorStore.dispatch({ type: 'APPEND_DIGIT', payload: key });
+            } else if (['+', '-', '*', '/', '%'].includes(key)) {
+                CalculatorStore.dispatch({ type: 'APPEND_OPERATOR', payload: key });
+            }
+        });
+    </script>
+</body>
+</html>
